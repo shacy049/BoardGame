@@ -20,3 +20,48 @@
         gameSql += " AND [Name] LIKE @" + parameters.Count;
         parameters.Add("%" + searchText + "%");
     }
+
+      // --- Family filter ---
+    if (!String.IsNullOrWhiteSpace(family))
+    {
+        gameSql += " AND [Family] = @" + parameters.Count;
+        parameters.Add(family);
+    }
+
+    gameSql += " ORDER BY [Name]";
+    var games = db.Query(gameSql, parameters.ToArray());
+}
+
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Board Games</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="container py-4">
+        <h2 class="text-center mb-4 text-primary fw-bold">🎲 Board Game Collection</h2>
+
+        <!-- Search and Filter -->
+        <form method="get" class="row g-2 mb-4 justify-content-center">
+            <div class="col-md-4">
+                <input type="text" name="searchText" value="@searchText" class="form-control" placeholder="Search by game name..." />
+            </div>
+            <div class="col-md-3">
+                <select name="family" class="form-select">
+                    <option value="">-- All --</option>
+                    @foreach (var f in families)
+                    {
+                        var fam = (string)f.Family;
+                        <option value="@fam" @(fam == family ? "selected" : "")>@fam</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
