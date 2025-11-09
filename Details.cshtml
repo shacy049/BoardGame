@@ -1,0 +1,56 @@
+@using WebMatrix.Data
+@{
+    var db = Database.Open("BoardGame");
+    var id = Request.QueryString["BGGId"];
+
+    if (String.IsNullOrEmpty(id))
+    {
+        <div class="alert alert-danger text-center mt-5">Invalid Game ID.</div>
+        return;
+    }
+
+    // --- Fetch main game details ---
+    var game = db.QuerySingle("SELECT * FROM [BoardGame] WHERE [BGGId] = @0", id);
+    if (game == null)
+    {
+        <div class="alert alert-warning text-center mt-5">Game not found.</div>
+        return;
+    }
+
+    // --- Try to get ratings if table exists ---
+    dynamic ratings = new List<dynamic>();
+    double avgRating = 0;
+    int reviewCount = 0;
+
+    try
+    {
+        ratings = db.Query("SELECT * FROM [GameRating] WHERE [BGGId] = @0", id);
+
+        if (ratings.Count() > 0)
+        {
+            var validRatings = new List<double>();
+
+            foreach (var r in ratings)
+            {
+                if (r.Rating != null)
+                {
+                    double value;
+                    if (double.TryParse(r.Rating.ToString(), out value))
+                    {
+                        validRatings.Add(value);
+                    }
+                }
+            }
+
+            if (validRatings.Count > 0)
+            {
+                avgRating = validRatings.Average();
+                reviewCount = validRatings.Count;
+            }
+        }
+    }
+    catch
+    {
+           // Safe fallback if GameRating table doesn't exist
+        ratings = new List<dynamic>();
+    }
