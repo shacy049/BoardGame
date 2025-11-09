@@ -79,6 +79,64 @@
         }
         else if (viewMode == "card")
         {
+            <!-- Card View -->
+            <div class="row row-cols-1 row-cols-md-3 g-4">
+                @foreach (var g in games)
+                {
+                    <div class="col">
+                        <div class="card h-100 shadow-sm">
+                            @if (!String.IsNullOrWhiteSpace(g.ImagePath))
+                            {
+                                <img src="@g.ImagePath" class="card-img-top" alt="@g.Name image" style="height:200px;object-fit:cover;" />
+                            }
+                            <div class="card-body">
+                                <h5 class="card-title">@g.Name</h5>
+                                <p class="card-text small mb-1"><strong>Year:</strong> @(g.YearPublished ?? "N/A")</p>
+                                <p class="card-text small"><strong>Family:</strong> @g.Family</p>
+                                <p class="card-text small"><strong>Players:</strong> @g.MinPlayers – @g.MaxPlayers</p>
+                                <a href="/Home/Details?BGGId=@g.BGGId" class="btn btn-outline-primary w-100">View Details</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!--  Table View -->
+            <table class="table table-bordered table-hover align-middle">
+                <thead class="table-dark text-center">
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Family</th>
+                        <th>Players</th>
+                        <th>Year</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var g in games)
+                    {
+                        <tr>
+                            <td style="width:100px;">
+                                @if (!String.IsNullOrWhiteSpace(g.ImagePath))
+                                {
+                                    <img src="@g.ImagePath" alt="@g.Name" style="height:60px;width:100%;object-fit:cover;" />
+                                }
+                            </td>
+                            <td>@g.Name</td>
+                            <td>@g.Family</td>
+                            <td class="text-center">@g.MinPlayers – @g.MaxPlayers</td>
+                            <td>@(g.YearPublished ?? "N/A")</td>
+                            <td class="text-center">
+                                <a href="/Home/Details?BGGId=@g.BGGId" class="btn btn-sm btn-outline-primary">Details</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
     </div>
 </body>
 </html>
