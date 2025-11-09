@@ -1,0 +1,22 @@
+@using WebMatrix.Data
+@{
+    var db = Database.Open("BoardGame");
+
+    var searchText = Request["searchText"] ?? "";
+    var family = Request["family"] ?? "";
+    var viewMode = Request["view"] ?? "table"; // default view
+
+    // Get families for dropdown
+    var familySql = "SELECT DISTINCT [Family] FROM [BoardGame] WHERE [Family] IS NOT NULL AND [Family] <> '' ORDER BY [Family]";
+    var families = db.Query(familySql);
+
+    // Base query
+    var gameSql = "SELECT [BGGId], [Name], [YearPublished], [ImagePath], [Family], [MinPlayers], [MaxPlayers] FROM [BoardGame] WHERE 1=1";
+    var parameters = new List<object>();
+
+    // --- Search filter ---
+    if (!String.IsNullOrWhiteSpace(searchText))
+    {
+        gameSql += " AND [Name] LIKE @" + parameters.Count;
+        parameters.Add("%" + searchText + "%");
+    }
