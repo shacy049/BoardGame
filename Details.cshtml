@@ -71,3 +71,52 @@
 <body>
     <div class="container py-4">
         <a href="/Home/Index" class="btn btn-outline-secondary mb-3">&laquo; Back to List</a>
+
+    <!--  Game Details Card -->
+        <div class="card shadow-lg mb-4">
+            @if (!String.IsNullOrWhiteSpace(game.ImagePath))
+            {
+                <img src="@game.ImagePath" class="card-img-top" alt="@game.Name image"
+                     style="height:400px;object-fit:cover;" />
+            }
+            <div class="card-body">
+                <h3 class="card-title text-primary fw-bold">@game.Name</h3>
+                <p class="card-text"><strong>Family:</strong> @game.Family</p>
+                <p class="card-text"><strong>Players:</strong> @game.MinPlayers – @game.MaxPlayers</p>
+                <p class="card-text"><strong>Year Published:</strong> @game.YearPublished</p>
+                <p class="card-text"><strong>Description:</strong><br />@game.Description</p>
+
+                <!-- ⭐ Ratings Section -->
+                @if (reviewCount > 0)
+                {
+                    <hr />
+                    <h5 class="text-success mb-3">⭐ Ratings & Reviews</h5>
+                    <p><strong>Average Rating:</strong> @avgRating.ToString("0.0") / 5</p>
+                    <p><strong>Number of Reviews:</strong> @reviewCount</p>
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-light">
+                                <tr><th>User</th><th>Rating</th><th>Comment</th></tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var r in ratings)
+                                {
+                                    <tr>
+                                        <td>@r.UserName</td>
+                                        <td>@r.Rating</td>
+                                        <td>@r.Comment</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted fst-italic">No ratings available for this game yet.</p>
+                }
+            </div>
+        </div>
+</body>
+</html>
