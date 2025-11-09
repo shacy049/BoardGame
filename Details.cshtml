@@ -118,5 +118,51 @@
                 }
             </div>
         </div>
+
+        <!-- Related Games  -->
+            <div class="mb-5">
+                <h4 class="text-center text-secondary fw-bold mb-3">Related Games</h4>
+
+                <div id="relatedCarousel" class="carousel slide" data-bs-ride="carousel">
+                    <div class="carousel-inner">
+                        @{
+                            var index = 0;
+                            foreach (var rel in related)
+                            {
+                                <div class="carousel-item @(index == 0 ? "active" : "")">
+                                    <div class="card text-center mx-auto" style="width:20rem;">
+                                        @if (!String.IsNullOrWhiteSpace(rel.ImagePath))
+                                        {
+                                            <img src="@rel.ImagePath" class="card-img-top" alt="@rel.Name"
+                                                 style="height:200px;object-fit:cover;" />
+                                        }
+                                        <div class="card-body">
+                                            <h6 class="card-title">@rel.Name</h6>
+                                            <p class="text-muted small mb-1">Year: @rel.YearPublished</p>
+                                            <a href="/Home/Details?BGGId=@rel.BGGId"
+                                               class="btn btn-sm btn-outline-primary">View</a>
+                                        </div>
+                                    </div>
+                                </div>
+                                index++;
+                            }
+                        }
+                    </div>
+
+                    <button class="carousel-control-prev" type="button"
+                            data-bs-target="#relatedCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button"
+                            data-bs-target="#relatedCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
