@@ -48,6 +48,56 @@
                 imagePath
             );
 
+            // ----- Theme logic -----
+            string themeIdToUse = null;
+
+            if (!String.IsNullOrWhiteSpace(newThemeName))
+            {
+                // Check if this theme name already exists
+                var existingId = db.QueryValue(
+                    "SELECT ThemeID FROM Theme WHERE ThemeName = @0",
+                    newThemeName
+                );
+
+                if (existingId != null)
+                {
+                    themeIdToUse = existingId.ToString();
+                }
+                else
+                {
+                    // Simple approach: use the theme name itself as the ID
+                    var newThemeId = newThemeName.Trim();
+                    db.Execute(
+                        "INSERT INTO Theme (ThemeID, ThemeName) VALUES (@0, @1)",
+                        newThemeId,
+                        newThemeName.Trim()
+                    );
+                    themeIdToUse = newThemeId;
+                }
+            }
+            else if (!String.IsNullOrWhiteSpace(selectedThemeId))
+            {
+                themeIdToUse = selectedThemeId;
+            }
+
+            if (!String.IsNullOrWhiteSpace(themeIdToUse))
+            {
+                db.Execute(
+                    "INSERT INTO GameInThemes (BGGId, ThemeID) VALUES (@0, @1)",
+                    newBGGId,
+                    themeIdToUse
+                );
+            }
+
+            isSuccess = true;
+            message = "Game created successfully.";
+
+            // Redirect to details page for the new game
+            Response.Redirect("/Home/Details?BGGId=" + newBGGId);
+        }
+    }
+}
+
 <!doctype html>
 <html>
 <head>
@@ -115,5 +165,27 @@
                         }
                     </select>
                 </div>
-                
-  
+                <hr />
+                <h5 class="text-secondary">Game Theme</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="ThemeID">Existing Theme</label>
+                        <select name="ThemeID" id="ThemeID" class="form-select">
+                            <option value="">--  Select theme --</option>
+                            @foreach (var t in themeList)
+                            {
+                                <option value="@t.ThemeID">@t.ThemeName</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label" for="NewThemeName">Add new Theme</label>
+                        <input type="text" name="NewThemeName" id="NewThemeName"
+                               class="form-control" placeholder="Enter new theme name" />
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
