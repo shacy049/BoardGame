@@ -1,0 +1,229 @@
+@using WebMatrix.Data
+@{
+    var db = Database.Open("BoardGame");
+    var id = Request.QueryString["BGGId"];
+
+    if (String.IsNullOrEmpty(id))
+    {
+        <div class="alert alert-danger mt-4 text-center">No game id supplied.</div>
+        return;
+    }
+
+    // Load dropdown data
+    var families = db.Query("SELECT Family FROM GameFamily ORDER BY Family");
+    var themes = db.Query("SELECT ThemeID, ThemeName FROM Theme ORDER BY ThemeName");
+
+    // Load current game
+    var game = db.QuerySingle("SELECT * FROM BoardGame WHERE BGGId = @0", id);
+    if (game == null)
+    {
+        <div class="alert alert-warning mt-4 text-center">Game not found.</div>
+        return;
+    }
+
+    // Current theme (if any)
+    var currentThemeId = db.QueryValue(
+        "SELECT TOP 1 ThemeID FROM GameInThemes WHERE BGGId = @0",
+        id
+    );
+
+    string message = "";
+    bool isSuccess = false;
+
+    if (IsPost)
+    {
+        // --- Read values from form (all as strings) ---
+        var name = Request["Name"];
+        var description = Request["Description"];
+        var year = Request["YearPublished"];  // "yyyy-MM-dd" from <input type="date">
+        var minPlayers = Request["MinPlayers"];
+        var maxPlayers = Request["MaxPlayers"];
+        var imagePath = Request["ImagePath"];
+        var family = Request["Family"];
+
+        var selectedThemeId = Request["ThemeID"];
+        var newThemeName = Request["NewThemeName"];
+
+        if (String.IsNullOrWhiteSpace(name))
+        {
+            message = "Name is required.";
+        }
+        else
+        {
+            // Convert blanks to NULL so SQL doesn’t choke on empty strings
+            object yearParam = String.IsNullOrWhiteSpace(year) ? (object)DBNull.Value : (object)year;
+            object minPlayersParam = String.IsNullOrWhiteSpace(minPlayers) ? (object)DBNull.Value : (object)minPlayers;
+            object maxPlayersParam = String.IsNullOrWhiteSpace(maxPlayers) ? (object)DBNull.Value : (object)maxPlayers;
+            object familyParam = String.IsNullOrWhiteSpace(family) ? (object)DBNull.Value : (object)family;
+            object imageParam = String.IsNullOrWhiteSpace(imagePath) ? (object)DBNull.Value : (object)imagePath;
+
+            // --- UPDATE BoardGame ---
+            db.Execute(@"
+    UPDATE BoardGame SET
+    Name          = @0,
+    Description   = @1,
+    YearPublished = @2,
+    MinPlayers    = @3,
+    MaxPlayers    = @4,
+    Family        = @5,
+    ImagePath     = @6
+    WHERE BGGId       = @7",
+                name,
+                description,
+                yearParam,
+                minPlayersParam,
+                maxPlayersParam,
+                familyParam,
+                imageParam,
+                id
+            );
+
+            // --- Update theme link ---
+            // Remove old theme links
+            db.Execute("DELETE FROM GameInThemes WHERE BGGId = @0", id);
+
+            string themeIdToUse = null;
+
+            if (!String.IsNullOrWhiteSpace(newThemeName))
+            {
+                // Check if theme with this name already exists
+                var existingId = db.QueryValue(
+                    "SELECT ThemeID FROM Theme WHERE ThemeName = @0",
+                    newThemeName
+                );
+
+                if (existingId != null)
+                {
+                    themeIdToUse = existingId.ToString();
+                }
+                else
+                {
+                    // Simple: use trimmed name as ID
+                    var newThemeId = newThemeName.Trim();
+                    db.Execute(
+                        "INSERT INTO Theme (ThemeID, ThemeName) VALUES (@0, @1)",
+                        newThemeId,
+                        newThemeName.Trim()
+                    );
+                    themeIdToUse = newThemeId;
+                }
+            }
+            else if (!String.IsNullOrWhiteSpace(selectedThemeId))
+            {
+                themeIdToUse = selectedThemeId;
+            }
+
+            if (!String.IsNullOrWhiteSpace(themeIdToUse))
+            {
+                db.Execute(
+                    "INSERT INTO GameInThemes (BGGId, ThemeID) VALUES (@0, @1)",
+                    id,
+                    themeIdToUse
+                );
+            }
+
+            isSuccess = true;
+            message = "Game updated successfully.";
+
+            // Reload game and theme for display after update
+            game = db.QuerySingle("SELECT * FROM BoardGame WHERE BGGId = @0", id);
+            currentThemeId = themeIdToUse;
+        }
+    }
+}
+<!doctype html>
+<html>
+<div class="container mt-4">
+    <h2 class="mb-3">Edit Game: @game.Name</h2>
+
+    @if (!String.IsNullOrEmpty(message))
+    {
+        <div class="alert @(isSuccess ? "alert-success" : "alert-danger")">
+            @message
+        </div>
+    }
+
+    <div class="card shadow-sm p-4">
+        <form method="post">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">BGG Id</label>
+                    <input type="text" class="form-control" value="@game.BGGId" disabled />
+                </div>
+                <div class="col-md-8 mb-3">
+                    <label class="form-label" for="Name">Name</label>
+                    <input type="text" name="Name" id="Name" class="form-control"
+                           value="@game.Name" required />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="Description">Description</label>
+                <textarea name="Description" id="Description" class="form-control"
+                          rows="3">@game.Description</textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="YearPublished">Year Published</label>
+                    <input type="date" name="YearPublished" id="YearPublished"
+                           class="form-control"
+                           value="@String.Format("{0:yyyy-MM-dd}", game.YearPublished)" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="MinPlayers">Min Players</label>
+                    <input type="number" name="MinPlayers" id="MinPlayers"
+                           class="form-control" value="@game.MinPlayers" />
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label" for="MaxPlayers">Max Players</label>
+                    <input type="number" name="MaxPlayers" id="MaxPlayers"
+                           class="form-control" value="@game.MaxPlayers" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="ImagePath">Image Path</label>
+                <input type="text" name="ImagePath" id="ImagePath"
+                       class="form-control" value="@game.ImagePath" />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label" for="Family">Game Family</label>
+                <select name="Family" id="Family" class="form-select">
+                    <option value="">-- Select a family --</option>
+                    @foreach (var fam in families)
+                    {
+                        <option value="@fam.Family"
+                                @(fam.Family == game.Family ? "selected" : "")>
+                            @fam.Family
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="ThemeID">Theme</label>
+                    <select name="ThemeID" id="ThemeID" class="form-select">
+                        <option value="">-- No theme / select --</option>
+                        @foreach (var t in themes)
+                        {
+                            <option value="@t.ThemeID"
+                                    @(currentThemeId != null && t.ThemeID == currentThemeId ? "selected" : "")>
+                                @t.ThemeName
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="NewThemeName">Or add new Theme</label>
+                    <input type="text" name="NewThemeName" id="NewThemeName"
+                           class="form-control"
+                           placeholder="Enter new theme name" />
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</html>
